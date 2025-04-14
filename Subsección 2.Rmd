@@ -1,0 +1,316 @@
+---
+title: "Subsección 2"
+author: "Carlos López"
+date: "2025-04-12"
+output: html_document
+---
+
+
+# Instrucciones
+
+Actividad 1: Con funciones de la librería {dplyr} para obtener el número total de incidentes, número total de accidentes fatales y el número total de muertes en el periodo de 1985 a 2014.
+
+Actividad 2: Obtenga las 10 aerolíneas que han tenido el mayor número de incidentes. Haga una visualización que permita identificar a éstas. ¿Hay algún cambio en este top 10 antes y después del año 2000?
+
+Actividad 3: Obtenga las 10 aerolíneas que han tenido el menor número de incidentes. Haga una visualización que permita identificar a éstas. ¿Hay algún cambio en este top 10 antes y después del año 2000?
+
+Actividad 4: Obtenga las 10 aerolíneas que han tenido el mayor número de muertes. Haga una visualización que permita identificar a éstas. ¿Hay algún cambio en este top 10 antes y después del año 2000?
+
+Actividad 5: Obtenga las 10 aerolíneas que han tenido el menor número de muertes. Haga una visualización que permita identificar a éstas. ¿Hay algún cambio en este top 10 antes y después del año 2000?
+
+Importante: Sus visualizaciones deben tener formato suficientemente bueno para publicar en alguna revista.
+
+
+# Importo los datos de la librería de seguridad de vuelos
+
+```{r}
+datos_vuelos <- fivethirtyeight::airline_safety
+```
+
+## Cargo las librerías necesarias.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
++ Exploro con un head qué contiene el df.
+
+```{r}
+head(datos_vuelos)
+```
+ + Con un str.
+
+```{r}
+str(datos_vuelos)
+```
+## Actividad 1 
+
+Actividad 1: Con funciones de la librería {dplyr} para obtener el número total de incidentes, número total de accidentes fatales y el número total de muertes en el periodo de 1985 a 2014.
+
+
+ + Creo nuevas columnas con los totales del período 1985-2014
+
+```{r}
+datos_vuelos <- datos_vuelos %>% mutate(incidents_85_14 = incidents_85_99+incidents_00_14,
+                        fatal_accidents_85_14 = fatal_accidents_85_99+fatal_accidents_00_14,
+                        fatalities_85_14 = fatalities_85_99+fatalities_00_14
+                        )
+```
+
++ Compruebo que se crearon las nuevas columnas. 
+
+```{r}
+head(datos_vuelos)
+```
+
++ Uso (colSUm) para calcular los totales solo de las tres nuevas columnas. 
+
+```{r}
+Tot_85_14 = colSums (datos_vuelos[ , 10:12])
+Tot_85_14
+```
++ No me gusta con  (colSum), pruebo con (summarise). Es mejor el resultado.
+
+```{r}
+datos_vuelos %>% summarise("Incidentes 1985-2014" = sum(incidents_85_14),"Accidentes fatales 1985-2014" = sum(fatal_accidents_85_14),"Muertes 1985-2014" = sum(fatalities_85_14))
+
+```
+## Actividad 2
+
++ Obtenga las 10 aerolíneas que han tenido el mayor número de incidentes. Haga una visualización que permita identificar a éstas. ¿Hay algún cambio en este top 10 antes y después del año 2000?
+
++ Creo una tibble con solo las diez aerolíneas con más incidentes en el período 85-14. 
+
+```{r}
+top_10 <- datos_vuelos %>% arrange(desc(incidents_85_14)) %>% head(10)
+top_10
+```
+
++ Grafico.
+
+```{r}
+ggplot(top_10,aes(x=airline,y = incidents_85_14))+
+  geom_col(fill = ("skyblue"))+
+  labs(x="Aerolínea",
+         y ="Incidentes", 
+       title= "Número de incidentes por aerolinea")
+```
++ No me gusta porque se enciman los nombres de las aerolíneas, además, no es fácil ver el ranking. 
++ Ordeno de mayor a menor y volteo los ejes. 
+
+
+```{r}
+top_10%>%
+ggplot(mapping = aes(x =reorder(airline,incidents_85_14),y = incidents_85_14))+
+         geom_col(fill ="skyblue")+
+         coord_flip()+
+         labs(x="Nombre de la aerolínea",
+         y ="Incidentes 1985 - 2014.", 
+       title= "Diez aerolíneas  com mayor número de incidentes.")
+```
+
+
+## Voy crear un nuevo base, larga, para hacer un gráfico en el que pueda comparar los dos períodos.
++ Primero selecciono las columnas que necesito. 
+
+```{r}
+top10_incidentes <- dplyr::select(top_10,airline,incidents_85_99,incidents_00_14
+)
+top10_incidentes
+```
+
++ La convierto en larga. 
+
+```{r}
+top10_todos <-top10_incidentes |> tidyr::pivot_longer(cols = c('incidents_85_99', 'incidents_00_14'), #¿Qué columnas quiero convertir a renglones?
+                    names_to = 'periodo', # nombre de la nueva columna
+                    values_to = 'incidentes') # valores que asignarás
+top10_todos
+```
+
++ Hago la gráfica. 
+
+```{r}
+ggplot(top10_todos,aes(x=airline,y = incidentes,fill = periodo))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+         labs(x="Aerolínea",
+         y ="Incidentes", 
+       title= "Diez aerolíneas con más incidentes, comparación por período.")+
+  theme(legend.position = "bottom")+
+  guides(fill = guide_legend(title = "Periodos"))+
+  scale_fill_hue(labels = c("2000-2014", "1985-1999"))
+ 
+
+```
+
+##Actividad 3. 
++Obtenga las 10 aerolíneas que han tenido el menor número de incidentes. Haga una visualización que permita identificar a éstas. ¿Hay algún cambio en este top 10 antes y después del año 2000?
+
++ Tomo la base de la actividad 1.
++ La ordeno ascendentemente. 
+
+```{r}
+bottom_10 <- datos_vuelos %>% arrange((incidents_85_14)) %>% head(10)
+bottom_10
+```
+
+```{r}
+bottom_10%>%
+ggplot(mapping = aes(x =reorder(airline,incidents_85_14),y = incidents_85_14))+
+         geom_col(fill ="skyblue")+
+         coord_flip()+
+         labs(x="Aerolínea",
+         y ="Incidentes", 
+       title= "Diez aerolíneas con menor número de incidentes, 1985-2014.")
+```
+
+
+```{r}
+bottom10_incidentes <- dplyr::select(bottom_10,airline,incidents_85_99,incidents_00_14
+)
+bottom10_incidentes
+```
+
+
+```{r}
+bottom10_todos <-bottom10_incidentes |> tidyr::pivot_longer(cols = c('incidents_85_99', 'incidents_00_14'), #¿Qué columnas quiero convertir a renglones?
+                    names_to = 'periodo', # nombre de la nueva columna
+                    values_to = 'incidentes') # valores que asignarás
+bottom10_todos
+```
+
+```{r}
+ggplot(bottom10_todos,aes(x=airline,y = incidentes,fill = periodo))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+         labs(x="Aerolínea",
+         y ="Incidentes", 
+       title= "Diez aerolíneas con menor número de incidentes,  comparación por período.")+
+  theme(legend.position = "bottom")+
+  guides(fill = guide_legend(title = "Periodos"))+
+  scale_fill_hue(labels = c("2000-2014", "1985-1999"))
+ 
+
+```
+## Actividad 4.
++ Obtenga las 10 aerolíneas que han tenido el mayor número de muertes. Haga una visualización que permita identificar a estas. ¿Hay algún cambio en este top 10 antes y después del año 2000?
+
+
+```{r}
+top_10_fatal <- datos_vuelos %>% arrange(desc(fatalities_85_14)) %>% head(10)
+top_10
+```
+
+```{r}
+top_10_fatal%>%
+ggplot(mapping = aes(x =reorder(airline,fatalities_85_14),y = fatalities_85_14))+
+         geom_col(fill ="skyblue")+
+         coord_flip()+
+         labs(x="Aerolínea",
+         y ="Muertes", 
+       title= "Diez aerolíneas con mayor número de muertes,  1985-2014.")
+```
+
+```{r}
+top10_fatalities <- dplyr::select(top_10_fatal,airline,fatalities_85_99,fatalities_00_14
+)
+top10_fatalities
+```
+
+
+```{r}
+top10_fatal_larga <-top10_fatalities |> tidyr::pivot_longer(cols = c('fatalities_85_99', 'fatalities_00_14'), #¿Qué columnas quiero convertir a renglones?
+                    names_to = 'periodo', # nombre de la nueva columna
+                    values_to = 'muertes') # valores que asignarás
+top10_fatal_larga
+```
+
+```{r}
+ggplot(top10_fatal_larga,aes(x=airline,y = muertes,fill = periodo))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+         labs(x="Aerolínea",
+         y ="Muertes", 
+       title= "Diez aerolíneas con mayor número de muertes,  comparación por período.")+
+  theme(legend.position = "bottom")+
+  guides(fill = guide_legend(title = "Periodos"))+
+  scale_fill_hue(labels = c("2000-2014", "1985-1999"))
+ 
+
+```
+
+## Actividad 5.
++ Obtenga las 10 aerolíneas que han tenido el menor número de muertes. Haga una visualización que permita identificar a éstas. ¿Hay algún cambio en este top 10 antes y después del año 2000?
+
++ Existen 12 aerolíneas con cero muertes en el período 1985-2014, no tiene sentido hacer gráficas ni comparaciones para ellas. Las categorpias aparecen vacías. 
+
++ Hago una lista de estas 12 aerolíneas con cero muertes. 
+
+
+```{r}
+zero_muertes <- datos_vuelos %>% filter(fatalities_85_14 == 0)
+head(zero_muertes)
+```
+
++ Para hacer las gráficas y comparaciones, creo una nueva base con las aerolíneas que tienen al menos una muerte. 
++ Queda una base de 44 filas. De esta seleccionaré aquellas con menos muertes para hacer las gráficas y comparaciones. 
+
+```{r}
+datos_vuelos_muertes <- datos_vuelos %>% filter(fatalities_85_14 > 0)
+datos_vuelos_muertes
+```
+
++ Selecciono las 10 aerolíneas con menos muertes de entre las que tienen al menos una.
+
+
+```{r}
+bottom_10_fatal <- datos_vuelos_muertes %>% arrange((fatalities_85_14)) %>% head(10)
+bottom_10_fatal
+```
+
+
++ Grafico de más a menos muertes.
+
+```{r}
+bottom_10_fatal%>%
+ggplot(mapping = aes(x =reorder(airline,fatalities_85_14),y = fatalities_85_14))+
+         geom_col(fill ="skyblue")+
+         coord_flip()+
+         labs(x="Aerolínea",
+         y ="Muertes", 
+       title= "Número de muertes por aerolinea 1985-2014")
+```
++ Creo una nueva base seleccionando solo aerolínea y muertes por período. 
+
+```{r}
+bottom10_fatalities <- dplyr::select(bottom_10_fatal,airline,fatalities_85_99,fatalities_00_14
+)
+bottom10_fatalities
+```
+
++ Convierto de ancha a larga la base anterior. 
+
+```{r}
+bottom10_fatal_larga <-bottom10_fatalities |> tidyr::pivot_longer(cols = c('fatalities_85_99', 'fatalities_00_14'), #¿Qué columnas quiero convertir a renglones?
+                    names_to = 'periodo', # nombre de la nueva columna
+                    values_to = 'muertes') # valores que asignarás
+bottom10_fatal_larga
+```
+
++ Hago la gráfica para comparar los dos períodos. 
+
+```{r}
+ggplot(bottom10_fatal_larga,aes(x=airline,y = muertes,fill = periodo))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+         labs(x="Aerolínea",
+         y ="Muertes", 
+       title= "Número de muertes por aerolinea 1985-2014")+
+  theme(legend.position = "bottom")+
+  guides(fill = guide_legend(title = "Periodos"))+
+  scale_fill_hue(labels = c("2000-2014", "1985-1999"))
+ 
+
+```
