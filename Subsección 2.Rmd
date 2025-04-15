@@ -253,6 +253,30 @@ ggplot(top10_fatal_larga,aes(x=airline,y = muertes,fill = periodo))+
 zero_muertes <- datos_vuelos %>% filter(fatalities_85_14 == 0)
 head(zero_muertes)
 ```
++ Voy a usar (kableExtra) para dar formato a la tabla
+
+```{r}
+library(kableExtra)
+```
+
+
+```{r}
+zm <- select(zero_muertes,airline)
+
+```
+```{r}
+kbl(zm, booktabs = T) %>%
+kable_styling(latex_options = "striped")
+```
+
+```{r}
+kbl(zm, caption = "Aerolíneas con cero muertes, 1985-2014", booktabs = T) %>%
+kable_styling(latex_options = c("striped", "hold_position")) %>% 
+  kable_styling(latex_options = c("Aerolínea"))
+```
+
+
+
 
 + Para hacer las gráficas y comparaciones, creo una nueva base con las aerolíneas que tienen al menos una muerte. 
 + Queda una base de 44 filas. De esta seleccionaré aquellas con menos muertes para hacer las gráficas y comparaciones. 
@@ -261,6 +285,11 @@ head(zero_muertes)
 datos_vuelos_muertes <- datos_vuelos %>% filter(fatalities_85_14 > 0)
 datos_vuelos_muertes
 ```
+
+
+
+
+
 
 + Selecciono las 10 aerolíneas con menos muertes de entre las que tienen al menos una.
 
